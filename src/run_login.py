@@ -310,7 +310,7 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
         initial_html = driver.page_source
         initial_html_cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", "", initial_html, flags=re.IGNORECASE)
 
-        goal_text = str(run_state.get("instructions", "Log in successfully and reach the main app."))
+        goal_text = str(run_state.get("run_login", {}).get("instructions", "Log in successfully and reach the main app."))
         logger.info(f"Instructions: {goal_text}")
         app, state = build_graph(driver, initial_html_cleaned, goal_text, creds, artifacts_dir)
         logger.info("Graph compiled. Beginning execution loop...")
