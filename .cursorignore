@@ -1,0 +1,5 @@
+# Additional ignores specific to Cursor indexing
+artifacts/
+config/secret/
+
+*.env
