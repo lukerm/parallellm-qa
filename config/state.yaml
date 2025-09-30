@@ -1,0 +1,6 @@
+# Run-time state injected into the graph at invocation.
+# You can add arbitrary fields per your flows.
+# Each key should match the run file name (e.g., run_login, run_conversation, etc.)
+
+run_login:
+  instructions: "Log in successfully and land on the conversations page."
