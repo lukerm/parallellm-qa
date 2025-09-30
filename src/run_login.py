@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import json
 from datetime import datetime
 from pathlib import Path
 from contextlib import contextmanager
@@ -17,7 +18,7 @@ from selenium.common.exceptions import NoSuchElementException
 from webdriver_manager.chrome import ChromeDriverManager
 
 from langchain_core.tools import tool
-from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, BaseMessage
 from langchain_openai import ChatOpenAI
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END, MessagesState
@@ -283,6 +284,73 @@ def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, 
     return app, state
 
 
+def message_to_dict(msg: BaseMessage) -> dict:
+    """Convert a LangChain message to a JSON-serializable dict."""
+    result = {
+        "type": msg.__class__.__name__,
+        "content": msg.content,
+    }
+
+    # Add tool calls if present
+    if hasattr(msg, "tool_calls") and msg.tool_calls:
+        result["tool_calls"] = [
+            {
+                "name": tc.get("name"),
+                "args": tc.get("args"),
+                "id": tc.get("id"),
+            }
+            for tc in msg.tool_calls
+        ]
+
+    # Add tool call ID if this is a tool response
+    if hasattr(msg, "tool_call_id"):
+        result["tool_call_id"] = msg.tool_call_id
+
+    return result
+
+
+def run_and_save_execution_trace(stream, artifacts_dir: Path) -> Path:
+    """Save the full execution trace to JSON."""
+    trace = {
+        "timestamp": datetime.utcnow().isoformat(),
+        "steps": []
+    }
+
+    final_state = None
+    for step in stream:
+        final_state = step
+
+        # Convert each step to a serializable format
+        step_data = {}
+        for node_name, node_state in step.items():
+            step_data[node_name] = {
+                "status": node_state.get("status"),
+                "goal": node_state.get("goal"),
+                "messages": [message_to_dict(msg) for msg in node_state.get("messages", [])],
+                "artifacts_dir": node_state.get("artifacts_dir"),
+            }
+
+        trace["steps"].append(step_data)
+        logger.debug(f"Captured step {len(trace['steps'])}: {list(step.keys())}")
+
+    # Add final state summary
+    if final_state:
+        # Get the final status from the last state in the stream
+        for node_state in final_state.values():
+            if "status" in node_state:
+                trace["final_status"] = node_state.get("status")
+                break
+        trace["total_steps"] = len(trace["steps"])
+
+    # Save to JSON
+    trace_file = artifacts_dir / "execution_trace.json"
+    with trace_file.open("w", encoding="utf-8") as f:
+        json.dump(trace, f, indent=2, ensure_ascii=False)
+
+    logger.info(f"Execution trace saved to: {trace_file}")
+    return trace_file
+
+
 def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
     load_dotenv(dotenv_path=Path(".env"), override=False)
 
@@ -317,9 +385,7 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
 
         # Prime the agent with a suggested plan and initial actions
         # It can choose to call navigate, get_page_html, type_text, click, etc.
-        stream = app.stream(state)
-        for _ in stream:
-            pass
+        _ = run_and_save_execution_trace(app.stream(state), artifacts_dir)
 
         success = _is_logged_in(driver)
         logger.info(f"Login success status after graph run: {success}")
