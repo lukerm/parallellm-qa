@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "parallellm-qa"
+version = "0.1.0"
+description = "Playground for LangGraph agents"
+requires-python = ">=3.10"
+authors = [
+  { name = "lukerm" }
+]
+dependencies = [
+  "langgraph~=0.6.8",
+  "langchain-openai~=0.3.33",
+  "python-dotenv~=1.1.1",
+  "openai~=1.109.1",
+  "selenium~=4.35.0",
+  "webdriver-manager~=4.0.2",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest"
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
+
+
