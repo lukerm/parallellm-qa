@@ -6,7 +6,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
-import yaml
 from dotenv import load_dotenv
 import logging
 from selenium import webdriver
@@ -21,6 +20,7 @@ from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.prebuilt import ToolNode
 
 from . utils.selenium import get_driver
+from . utils.files import read_yaml, ensure_artefacts_dir, save_html, save_screenshot
 
 
 BASE_URL = "https://chat.parallellm.com"
@@ -31,33 +31,6 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 logger = logging.getLogger("login_runner")
-
-
-def _read_yaml(path: Path) -> Dict[str, Any]:
-    if not path.exists():
-        return {}
-    with path.open("r", encoding="utf-8") as f:
-        return yaml.safe_load(f) or {}
-
-
-def _ensure_artefacts_dir(subfolder: List[str], ts: Optional[str] = None) -> Path:
-    ts = ts or datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    out_dir = Path("artefacts") / ts / subfolder
-    out_dir.mkdir(parents=True, exist_ok=True)
-    return out_dir
-
-
-def _save_html(driver: webdriver.Chrome, out_dir: Path, name: str) -> Path:
-    html = driver.page_source
-    fp = out_dir / f"{name}.html"
-    fp.write_text(html, encoding="utf-8")
-    return fp
-
-
-def _save_screenshot(driver: webdriver.Chrome, out_dir: Path, name: str) -> Path:
-    fp = out_dir / f"{name}.png"
-    driver.save_screenshot(str(fp))
-    return fp
 
 
 def _is_logged_in(driver: webdriver.Chrome) -> bool:
@@ -164,8 +137,8 @@ def build_tools(driver: webdriver.Chrome, creds: Dict[str, str]):
     def post_login_capture() -> str:
         """Save HTML and a screenshot after login to the artefacts directory."""
         out_dir = Path(graph_artefacts_dir[0])
-        _save_html(driver, out_dir, "post_login")
-        _save_screenshot(driver, out_dir, "post_login")
+        save_html(driver, out_dir, "post_login")
+        save_screenshot(driver, out_dir, "post_login")
         logger.info(f"[tool:post_login_capture] saved to {out_dir}")
         return str(out_dir)
 
@@ -343,15 +316,15 @@ def run_login(driver: webdriver.Chrome, profile: Optional[str] = None, run_ts: s
     logger.info(f"Selected login profile: {login_profile}")
     secrets_path = Path("config/secret/logins.yaml.env")
     state_path = Path("config/state.yaml")
-    secrets = _read_yaml(secrets_path)
-    run_state = _read_yaml(state_path)
+    secrets = read_yaml(secrets_path)
+    run_state = read_yaml(state_path)
     logger.info(f"Loaded credentials from: {secrets_path}")
     logger.info(f"Loaded run state from: {state_path}")
     creds: Dict[str, str] = secrets.get(login_profile, {})
     if not creds:
         raise RuntimeError(f"No credentials found for profile '{login_profile}' in {secrets_path}")
 
-    artefacts_dir = _ensure_artefacts_dir(subfolder="run_login", ts=run_ts)
+    artefacts_dir = ensure_artefacts_dir(subfolder="run_login", ts=run_ts)
     graph_artefacts_dir[0] = str(artefacts_dir)
     logger.info(f"artefacts directory: {artefacts_dir}")
 
@@ -377,8 +350,8 @@ def run_login(driver: webdriver.Chrome, profile: Optional[str] = None, run_ts: s
     # Post-login capture
     if success:
         logger.info("Saving post-login HTML and screenshot...")
-        _save_html(driver, artefacts_dir, "post_login")
-        _save_screenshot(driver, artefacts_dir, "post_login")
+        save_html(driver, artefacts_dir, "post_login")
+        save_screenshot(driver, artefacts_dir, "post_login")
 
     return success, artefacts_dir
 
