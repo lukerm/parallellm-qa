@@ -4,11 +4,10 @@ import time
 from pathlib import Path
 from typing import Dict, List
 
+from langchain_core.tools import tool
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-
-from langchain_core.tools import tool
 
 from .files import save_html, save_screenshot
 
