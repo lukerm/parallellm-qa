@@ -19,8 +19,8 @@ from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.prebuilt import ToolNode
 
-from . utils.selenium import get_driver
 from . utils.files import read_yaml, ensure_artefacts_dir, save_html, save_screenshot
+from . utils.selenium import get_driver
 from . utils.tools import build_login_tools
 
 
