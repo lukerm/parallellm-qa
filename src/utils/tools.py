@@ -35,7 +35,7 @@ def build_common_tools(driver: webdriver.Chrome, creds: Dict[str, str] = None):
         if body_match:
             cleaned = body_match.group(1)
         try:
-            logger.info(f"[tool:get_page_html] sanitized_html_length={len(cleaned)}")
+            logger.info(f"[tool:get_page_html] sanitized_html_length={len(cleaned)} sanitized_html={cleaned[:20]}...")
         except Exception:
             logger.info("[tool:get_page_html] returned sanitized html")
         return cleaned
