@@ -223,6 +223,11 @@ def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, 
         # Otherwise check if we're done
         return "check"
 
+    # Conditional: if logged in -> END (post handled outside), else loop back to agent
+    def route_after_check(state: State):
+        return "end" if state.get("status") == "logged_in" else "loop"
+
+
     post_tools = ToolNode(tools)
 
     graph = StateGraph(State)
@@ -240,9 +245,7 @@ def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, 
         }
     )
     graph.add_edge("tools", "check")
-    # Conditional: if logged in -> END (post handled outside), else loop back to agent
-    def route_after_check(state: State):
-        return "end" if state.get("status") == "logged_in" else "loop"
+
 
     graph.add_conditional_edges(
         "check",
