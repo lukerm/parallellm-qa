@@ -40,9 +40,9 @@ def _read_yaml(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def _ensure_artefacts_dir() -> Path:
-    ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    out_dir = Path("artefacts") / "login" / ts
+def _ensure_artefacts_dir(subfolder: List[str], ts: Optional[str] = None) -> Path:
+    ts = ts or datetime.utcnow().strftime("%Y%m%d-%H%M%S")
+    out_dir = Path("artefacts") / ts / subfolder
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir
 
@@ -336,7 +336,7 @@ def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Path:
     return trace_file
 
 
-def run_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[bool, Path]:
+def run_login(driver: webdriver.Chrome, profile: Optional[str] = None, run_ts: str = None) -> Tuple[bool, Path]:
     load_dotenv(dotenv_path=Path(".env"), override=False)
 
     login_profile = profile or os.getenv("LOGIN_PROFILE", "default")
@@ -351,7 +351,7 @@ def run_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[
     if not creds:
         raise RuntimeError(f"No credentials found for profile '{login_profile}' in {secrets_path}")
 
-    artefacts_dir = _ensure_artefacts_dir()
+    artefacts_dir = _ensure_artefacts_dir(subfolder="run_login", ts=run_ts)
     graph_artefacts_dir[0] = str(artefacts_dir)
     logger.info(f"artefacts directory: {artefacts_dir}")
 
@@ -384,7 +384,8 @@ def run_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[
 
 
 if __name__ == "__main__":
+    run_ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
     with get_driver() as driver:
         logger.info("Invoking run_login()...")
-        ok, out = run_login(driver)
+        ok, out = run_login(driver, run_ts=run_ts)
     logger.info(f"login_success={ok} artefacts_dir={out}")
