@@ -21,6 +21,7 @@ from langgraph.prebuilt import ToolNode
 
 from . utils.selenium import get_driver
 from . utils.files import read_yaml, ensure_artefacts_dir, save_html, save_screenshot
+from . utils.tools import build_login_tools
 
 
 BASE_URL = "https://chat.parallellm.com"
@@ -45,105 +46,8 @@ def _is_logged_in(driver: webdriver.Chrome) -> bool:
 
 
 def build_tools(driver: webdriver.Chrome, creds: Dict[str, str]):
-    @tool("get_page_html")
-    def get_page_html() -> str:
-        """Return the current page HTML with all <script>...</script> tags removed."""
-        html = driver.page_source
-        # Remove all <script> tags and their contents (case-insensitive, across newlines)
-        cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", "", html, flags=re.IGNORECASE)
-        try:
-            logger.info(f"[tool:get_page_html] sanitized_html_length={len(cleaned)}")
-        except Exception:
-            logger.info("[tool:get_page_html] returned sanitized html")
-        return cleaned
-
-    @tool("type_text")
-    def type_text(selector: str, by: str, text: str) -> str:  # by in {css, id, name, xpath}
-        """Type text into an element identified by a selector. 'by' is one of css,id,name,xpath.
-
-        Placeholder policy: Do not include raw secrets. Use placeholders like <PASSWORD>, <EMAIL>.
-        They will be substituted with secure values from creds at runtime.
-        """
-        by_map = {
-            "css": By.CSS_SELECTOR,
-            "id": By.ID,
-            "name": By.NAME,
-            "xpath": By.XPATH,
-        }
-        by_key = by_map.get(by)
-        if by_key is None:
-            return f"Unsupported selector strategy: {by}"
-        # Replace known placeholders with runtime secrets (values used directly)
-        placeholder_map = {
-            "<PASSWORD>": creds.get("password", ""),
-            "<EMAIL>": creds.get("email", ""),
-        }
-        real_text = text
-        used_placeholders: List[str] = []
-        for placeholder, value in placeholder_map.items():
-            if placeholder in real_text:
-                real_text = real_text.replace(placeholder, value)
-                used_placeholders.append(placeholder)
-
-        el = driver.find_element(by_key, selector)
-        el.clear()
-        el.send_keys(real_text)
-        # Redacted logging
-        if used_placeholders:
-            logger.info(f"[tool:type_text] selector={selector} by={by} substituted={used_placeholders}")
-        else:
-            logger.info(f"[tool:type_text] selector={selector} by={by} text_len={len(real_text)}")
-        return "OK"
-
-    @tool("click")
-    def click(selector: str, by: str) -> str:
-        """Click an element identified by a selector. 'by' is one of css,id,name,xpath."""
-        by_map = {
-            "css": By.CSS_SELECTOR,
-            "id": By.ID,
-            "name": By.NAME,
-            "xpath": By.XPATH,
-        }
-        by_key = by_map.get(by)
-        if by_key is None:
-            return f"Unsupported selector strategy: {by}"
-        el = driver.find_element(by_key, selector)
-        el.click()
-        logger.info(f"[tool:click] selector={selector} by={by}")
-        return "OK"
-
-    @tool("check_is_logged_in")
-    def check_is_logged_in() -> bool:
-        """Return True if the user appears to be logged in on the current page."""
-        result = _is_logged_in(driver)
-        logger.info(f"[tool:check_is_logged_in] result={result}")
-        return result
-
-    @tool("sleep")
-    def sleep(seconds: float) -> str:
-        """Sleep for a number of seconds to allow the page to update."""
-        time.sleep(float(seconds))
-        logger.info(f"[tool:sleep] seconds={seconds}")
-        return "OK"
-
-    @tool("navigate")
-    def navigate(url: str) -> str:
-        """Navigate the browser to a URL."""
-        driver.get(url)
-        logger.info(f"[tool:navigate] url={url}")
-        return driver.current_url
-
-    @tool("post_login_capture")
-    def post_login_capture() -> str:
-        """Save HTML and a screenshot after login to the artefacts directory."""
-        out_dir = Path(graph_artefacts_dir[0])
-        save_html(driver, out_dir, "post_login")
-        save_screenshot(driver, out_dir, "post_login")
-        logger.info(f"[tool:post_login_capture] saved to {out_dir}")
-        return str(out_dir)
-
-    # Expose tools list
-    return [get_page_html, type_text, click, check_is_logged_in, sleep, navigate, post_login_capture]
+    """Build tools for login automation. Delegates to utils.tools.build_login_tools."""
+    return build_login_tools(driver, creds, _is_logged_in, graph_artefacts_dir)
 
 
 # A simple global holder for artefacts dir used inside tool closure
