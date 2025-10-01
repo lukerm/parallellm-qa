@@ -28,7 +28,12 @@ def build_common_tools(driver: webdriver.Chrome, creds: Dict[str, str] = None):
     def get_page_html() -> str:
         """Return the current page HTML with all <script>...</script> tags removed."""
         html = driver.page_source
+        # Remove all <script>...</script> tags
         cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", "", html, flags=re.IGNORECASE)
+        # Extract only the <body>...</body> content if present
+        body_match = re.search(r"<body[^>]*>([\s\S]*?)<\/body>", cleaned, flags=re.IGNORECASE)
+        if body_match:
+            cleaned = body_match.group(1)
         try:
             logger.info(f"[tool:get_page_html] sanitized_html_length={len(cleaned)}")
         except Exception:
