@@ -246,7 +246,10 @@ def run_login(driver: webdriver.Chrome, profile: Optional[str] = None, run_ts: s
 
     # Prime the agent with a suggested plan and initial actions
     # It can choose to call navigate, get_page_html, type_text, click, etc.
-    _ = run_and_save_execution_trace(app.stream(state), artefacts_dir)
+    _ = run_and_save_execution_trace(
+        app.stream(state, config={"recursion_limit": 25}),
+        artefacts_dir
+    )
 
     success = _is_logged_in(driver)
     logger.info(f"Login success status after graph run: {success}")
