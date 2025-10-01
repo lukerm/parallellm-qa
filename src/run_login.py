@@ -4,18 +4,14 @@ import time
 import json
 from datetime import datetime
 from pathlib import Path
-from contextlib import contextmanager
 from typing import Any, Dict, List, Optional, Tuple
 
 import yaml
 from dotenv import load_dotenv
 import logging
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-from webdriver_manager.chrome import ChromeDriverManager
 
 from langchain_core.tools import tool
 from langchain_core.messages import AnyMessage, HumanMessage, SystemMessage, BaseMessage
@@ -23,6 +19,8 @@ from langchain_openai import ChatOpenAI
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.prebuilt import ToolNode
+
+from . utils.selenium import get_driver
 
 
 BASE_URL = "https://chat.parallellm.com"
@@ -33,22 +31,6 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
 logger = logging.getLogger("login_agent")
-
-
-@contextmanager
-def get_driver():
-    options = Options()
-    # options.add_argument("--headless=new")
-    options.add_argument("--no-sandbox")
-    options.add_argument("--disable-dev-shm-usage")
-
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
-
-    try:
-        yield driver
-    finally:
-        driver.quit()
 
 
 def _read_yaml(path: Path) -> Dict[str, Any]:
