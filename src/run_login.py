@@ -58,9 +58,9 @@ def _read_yaml(path: Path) -> Dict[str, Any]:
         return yaml.safe_load(f) or {}
 
 
-def _ensure_artifacts_dir() -> Path:
+def _ensure_artefacts_dir() -> Path:
     ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    out_dir = Path("artifacts") / "login" / ts
+    out_dir = Path("artefacts") / "login" / ts
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir
 
@@ -180,8 +180,8 @@ def build_tools(driver: webdriver.Chrome, creds: Dict[str, str]):
 
     @tool("post_login_capture")
     def post_login_capture() -> str:
-        """Save HTML and a screenshot after login to the artifacts directory."""
-        out_dir = Path(graph_artifacts_dir[0])
+        """Save HTML and a screenshot after login to the artefacts directory."""
+        out_dir = Path(graph_artefacts_dir[0])
         _save_html(driver, out_dir, "post_login")
         _save_screenshot(driver, out_dir, "post_login")
         logger.info(f"[tool:post_login_capture] saved to {out_dir}")
@@ -191,11 +191,11 @@ def build_tools(driver: webdriver.Chrome, creds: Dict[str, str]):
     return [get_page_html, type_text, click, check_is_logged_in, sleep, navigate, post_login_capture]
 
 
-# A simple global holder for artifacts dir used inside tool closure
-graph_artifacts_dir: List[str] = [""]
+# A simple global holder for artefacts dir used inside tool closure
+graph_artefacts_dir: List[str] = [""]
 
 
-def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, creds: Dict[str, str], artifacts_dir: Path):
+def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, creds: Dict[str, str], artefacts_dir: Path):
     tools = build_tools(driver, creds)
     model = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o"), temperature=0).bind_tools(tools)
 
@@ -203,7 +203,7 @@ def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, 
         goal: str
         creds: Dict[str, str]
         status: str
-        artifacts_dir: str
+        artefacts_dir: str
 
     def agent_node(state: State) -> Dict[str, Any]:
         logger.debug("[agent] invoking model with messages")
@@ -281,7 +281,7 @@ def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, 
         "goal": goal,
         "creds": creds,
         "status": "start",
-        "artifacts_dir": str(artifacts_dir),
+        "artefacts_dir": str(artefacts_dir),
     }
 
     return app, state
@@ -312,7 +312,7 @@ def message_to_dict(msg: BaseMessage) -> dict:
     return result
 
 
-def run_and_save_execution_trace(stream, artifacts_dir: Path) -> Path:
+def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Path:
     """Save the full execution trace to JSON."""
     trace = {
         "timestamp": datetime.utcnow().isoformat(),
@@ -330,7 +330,7 @@ def run_and_save_execution_trace(stream, artifacts_dir: Path) -> Path:
                 "status": node_state.get("status"),
                 "goal": node_state.get("goal"),
                 "messages": [message_to_dict(msg) for msg in node_state.get("messages", [])],
-                "artifacts_dir": node_state.get("artifacts_dir"),
+                "artefacts_dir": node_state.get("artefacts_dir"),
             }
 
         trace["steps"].append(step_data)
@@ -346,7 +346,7 @@ def run_and_save_execution_trace(stream, artifacts_dir: Path) -> Path:
         trace["total_steps"] = len(trace["steps"])
 
     # Save to JSON
-    trace_file = artifacts_dir / "execution_trace.json"
+    trace_file = artefacts_dir / "execution_trace.json"
     with trace_file.open("w", encoding="utf-8") as f:
         json.dump(trace, f, indent=2, ensure_ascii=False)
 
@@ -369,9 +369,9 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
     if not creds:
         raise RuntimeError(f"No credentials found for profile '{login_profile}' in {secrets_path}")
 
-    artifacts_dir = _ensure_artifacts_dir()
-    graph_artifacts_dir[0] = str(artifacts_dir)
-    logger.info(f"Artifacts directory: {artifacts_dir}")
+    artefacts_dir = _ensure_artefacts_dir()
+    graph_artefacts_dir[0] = str(artefacts_dir)
+    logger.info(f"artefacts directory: {artefacts_dir}")
 
     with get_driver() as driver:
         driver.set_window_size(1280, 1200)
@@ -383,12 +383,12 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
 
         goal_text = str(run_state.get("run_login", {}).get("instructions", "Log in successfully and reach the main app."))
         logger.info(f"Instructions: {goal_text}")
-        app, state = build_graph(driver, initial_html_cleaned, goal_text, creds, artifacts_dir)
+        app, state = build_graph(driver, initial_html_cleaned, goal_text, creds, artefacts_dir)
         logger.info("Graph compiled. Beginning execution loop...")
 
         # Prime the agent with a suggested plan and initial actions
         # It can choose to call navigate, get_page_html, type_text, click, etc.
-        _ = run_and_save_execution_trace(app.stream(state), artifacts_dir)
+        _ = run_and_save_execution_trace(app.stream(state), artefacts_dir)
 
         success = _is_logged_in(driver)
         logger.info(f"Login success status after graph run: {success}")
@@ -396,13 +396,13 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
         # Post-login capture
         if success:
             logger.info("Saving post-login HTML and screenshot...")
-            _save_html(driver, artifacts_dir, "post_login")
-            _save_screenshot(driver, artifacts_dir, "post_login")
+            _save_html(driver, artefacts_dir, "post_login")
+            _save_screenshot(driver, artefacts_dir, "post_login")
 
-        return success, artifacts_dir
+        return success, artefacts_dir
 
 
 if __name__ == "__main__":
     logger.info("Invoking do_login()...")
     ok, out = do_login()
-    logger.info(f"login_success={ok} artifacts_dir={out}")
+    logger.info(f"login_success={ok} artefacts_dir={out}")
