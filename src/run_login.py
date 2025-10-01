@@ -336,7 +336,7 @@ def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Path:
     return trace_file
 
 
-def do_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[bool, Path]:
+def run_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[bool, Path]:
     load_dotenv(dotenv_path=Path(".env"), override=False)
 
     login_profile = profile or os.getenv("LOGIN_PROFILE", "default")
@@ -385,6 +385,6 @@ def do_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[b
 
 if __name__ == "__main__":
     with get_driver() as driver:
-        logger.info("Invoking do_login()...")
-        ok, out = do_login(driver)
+        logger.info("Invoking run_login()...")
+        ok, out = run_login(driver)
     logger.info(f"login_success={ok} artefacts_dir={out}")
