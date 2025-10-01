@@ -30,7 +30,7 @@ logging.basicConfig(
     level=getattr(logging, LOG_LEVEL, logging.INFO),
     format="%(asctime)s %(levelname)s [%(name)s] %(message)s",
 )
-logger = logging.getLogger("login_agent")
+logger = logging.getLogger("login_runner")
 
 
 def _read_yaml(path: Path) -> Dict[str, Any]:
