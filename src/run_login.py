@@ -336,7 +336,7 @@ def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Path:
     return trace_file
 
 
-def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
+def do_login(driver: webdriver.Chrome, profile: Optional[str] = None) -> Tuple[bool, Path]:
     load_dotenv(dotenv_path=Path(".env"), override=False)
 
     login_profile = profile or os.getenv("LOGIN_PROFILE", "default")
@@ -355,36 +355,36 @@ def do_login(profile: Optional[str] = None) -> Tuple[bool, Path]:
     graph_artefacts_dir[0] = str(artefacts_dir)
     logger.info(f"artefacts directory: {artefacts_dir}")
 
-    with get_driver() as driver:
-        driver.set_window_size(1280, 1200)
-        logger.info(f"Navigating to base URL: {BASE_URL}")
-        driver.get(BASE_URL)
+    driver.set_window_size(1280, 1200)
+    logger.info(f"Navigating to base URL: {BASE_URL}")
+    driver.get(BASE_URL)
 
-        initial_html = driver.page_source
-        initial_html_cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", "", initial_html, flags=re.IGNORECASE)
+    initial_html = driver.page_source
+    initial_html_cleaned = re.sub(r"<script\b[^>]*>[\s\S]*?<\/script>", "", initial_html, flags=re.IGNORECASE)
 
-        goal_text = str(run_state.get("run_login", {}).get("instructions", "Log in successfully and reach the main app."))
-        logger.info(f"Instructions: {goal_text}")
-        app, state = build_graph(driver, initial_html_cleaned, goal_text, creds, artefacts_dir)
-        logger.info("Graph compiled. Beginning execution loop...")
+    goal_text = str(run_state.get("run_login", {}).get("instructions", "Log in successfully and reach the main app."))
+    logger.info(f"Instructions: {goal_text}")
+    app, state = build_graph(driver, initial_html_cleaned, goal_text, creds, artefacts_dir)
+    logger.info("Graph compiled. Beginning execution loop...")
 
-        # Prime the agent with a suggested plan and initial actions
-        # It can choose to call navigate, get_page_html, type_text, click, etc.
-        _ = run_and_save_execution_trace(app.stream(state), artefacts_dir)
+    # Prime the agent with a suggested plan and initial actions
+    # It can choose to call navigate, get_page_html, type_text, click, etc.
+    _ = run_and_save_execution_trace(app.stream(state), artefacts_dir)
 
-        success = _is_logged_in(driver)
-        logger.info(f"Login success status after graph run: {success}")
+    success = _is_logged_in(driver)
+    logger.info(f"Login success status after graph run: {success}")
 
-        # Post-login capture
-        if success:
-            logger.info("Saving post-login HTML and screenshot...")
-            _save_html(driver, artefacts_dir, "post_login")
-            _save_screenshot(driver, artefacts_dir, "post_login")
+    # Post-login capture
+    if success:
+        logger.info("Saving post-login HTML and screenshot...")
+        _save_html(driver, artefacts_dir, "post_login")
+        _save_screenshot(driver, artefacts_dir, "post_login")
 
-        return success, artefacts_dir
+    return success, artefacts_dir
 
 
 if __name__ == "__main__":
-    logger.info("Invoking do_login()...")
-    ok, out = do_login()
+    with get_driver() as driver:
+        logger.info("Invoking do_login()...")
+        ok, out = do_login(driver)
     logger.info(f"login_success={ok} artefacts_dir={out}")
