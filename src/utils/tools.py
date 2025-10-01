@@ -164,25 +164,6 @@ def build_chat_tools(driver: webdriver.Chrome, graph_artefacts_dir: List[str]):
     common_tools = build_common_tools(driver, creds={})
 
     # Add chat-specific tools
-    @tool("check_submit_button_present")
-    def check_submit_button_present() -> bool:
-        """Check if the submit button is present. This indicates responses are complete."""
-        try:
-            possible_selectors = [
-                "button[type='submit']", "button.submit", "input[type='submit']"
-            ]
-            for selector in possible_selectors:
-                try:
-                    driver.find_element(By.CSS_SELECTOR, selector)
-                    logger.info(f"[tool:check_submit_button_present] Found: {selector}")
-                    return True
-                except NoSuchElementException:
-                    continue
-            logger.info("[tool:check_submit_button_present] Not found")
-            return False
-        except Exception as e:
-            logger.error(f"[tool:check_submit_button_present] Error: {e}")
-            return False
 
     @tool("save_chat_capture")
     def save_chat_capture(name: str) -> str:
@@ -204,5 +185,5 @@ def build_chat_tools(driver: webdriver.Chrome, graph_artefacts_dir: List[str]):
         logger.info(f"[tool:report_completion] health={health}, description={health_description}")
         return f"Completion reported: health={health}, description={health_description}"
 
-    return common_tools + [check_submit_button_present, save_chat_capture, report_completion]
+    return common_tools + [save_chat_capture, report_completion]
 
