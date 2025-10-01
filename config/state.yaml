@@ -4,3 +4,6 @@
 
 run_login:
   instructions: "Log in successfully and land on the conversations page."
+
+run_chats:
+  instructions: "Have a small conversation with the chat interface."
