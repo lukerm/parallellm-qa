@@ -56,7 +56,7 @@ graph_artefacts_dir: List[str] = [""]
 
 def build_graph(driver: webdriver.Chrome, initial_html_cleaned: str, goal: str, creds: Dict[str, str], artefacts_dir: Path):
     tools = build_tools(driver, creds)
-    model = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4o"), temperature=0).bind_tools(tools)
+    model = ChatOpenAI(model=os.getenv("OPENAI_MODEL", "gpt-4.1-mini"), temperature=0).bind_tools(tools)
 
     class State(MessagesState):
         goal: str
