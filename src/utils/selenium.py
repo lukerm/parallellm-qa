@@ -6,9 +6,10 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 
 @contextmanager
-def get_driver():
+def get_driver(headless: bool = False):
     options = Options()
-    # options.add_argument("--headless=new")
+    if headless:
+        options.add_argument("--headless=new")
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
 
