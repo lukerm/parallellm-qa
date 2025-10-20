@@ -22,7 +22,7 @@ from langgraph.graph import StateGraph, START, END, MessagesState
 from langgraph.prebuilt import ToolNode
 
 from .run_login import run_login
-from .utils.files import read_yaml, ensure_artefacts_dir, save_html, save_screenshot
+from .utils.files import read_yaml, ensure_artefacts_dir, save_html, save_screenshot, copy_trace_to_error_folder
 from .utils.selenium import get_driver
 from .utils.tools import build_chat_tools
 
@@ -373,11 +373,15 @@ if __name__ == "__main__":
     with get_driver() as driver:
         logger.info("Invoking run_login()...")
         ok, out = run_login(driver, run_ts=run_ts)
+        if not ok:
+            copy_trace_to_error_folder(out)
 
         time.sleep(10)
 
         logger.info("Invoking run_chats()...")
         ok, out = run_chats(driver, run_ts=run_ts)
+        if not ok:
+            copy_trace_to_error_folder(out)
 
         # Final digest
         logger.info(f"login_success={ok} artefacts_dir={out}")
