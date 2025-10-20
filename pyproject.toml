@@ -11,6 +11,7 @@ authors = [
   { name = "lukerm" }
 ]
 dependencies = [
+  "boto3~=1.40.55",
   "langgraph~=0.6.8",
   "langchain-openai~=0.3.33",
   "python-dotenv~=1.1.1",
