@@ -1,0 +1,168 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template for creating an EC2 instance for QA monitoring'
+
+Parameters:
+  EnvironmentType:
+    Type: String
+    Description: The type of deployment environment
+
+  InstanceType:
+    Type: String
+    Description: EC2 instance type
+
+  AmiId:
+    Type: String
+    Description: AMI ID for the EC2 instance
+
+  DiskSize:
+    Type: Number
+    Description: Size of the root volume in GB
+
+  MonitoringBucketName:
+    Type: String
+    Description: Name of the S3 bucket for storing QA monitoring outputs
+
+  SNSTopicArn:
+    Type: String
+    Description: ARN of the SNS topic for notifications
+
+  KeyName:
+    Type: String
+    Description: EC2 Key Pair name for SSH access
+
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: VPC ID where the EC2 instance will be deployed
+
+  SubnetId:
+    Type: AWS::EC2::Subnet::Id
+    Description: Subnet ID where the EC2 instance will be deployed
+
+Conditions:
+  HasKeyName: !Not [!Equals [!Ref KeyName, '']]
+
+Resources:
+  # IAM Role for EC2 instance
+  EC2InstanceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'qa-monitoring-ec2-role-${EnvironmentType}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ec2.amazonaws.com
+            Action: sts:AssumeRole
+      # ManagedPolicyArns:
+        # - arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy
+      Tags:
+        - Key: Project
+          Value: parallellm
+        - Key: Environment
+          Value: !Ref EnvironmentType
+
+  # IAM Policy for S3 and SNS access
+  EC2InstancePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub 'qa-monitoring-ec2-policy-${EnvironmentType}'
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+              - s3:PutObjectAcl
+              # - s3:GetObject
+            Resource:
+              - !Sub 'arn:aws:s3:::${MonitoringBucketName}/qa-monitoring/*'
+          - Effect: Allow
+            Action:
+              - s3:ListBucket
+            Resource:
+              - !Sub 'arn:aws:s3:::${MonitoringBucketName}'
+            # Condition:
+            #   StringLike:
+            #     s3:prefix:
+            #       - 'qa-monitoring/*'
+          # SNS permissions
+          - Effect: Allow
+            Action:
+              - sns:Publish
+            Resource:
+              - !Ref SNSTopicArn
+      Roles:
+        - !Ref EC2InstanceRole
+
+  # Instance Profile
+  EC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      InstanceProfileName: !Sub 'qa-monitoring-ec2-profile-${EnvironmentType}'
+      Roles:
+        - !Ref EC2InstanceRole
+
+  # Security Group
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: !Sub 'qa-monitoring-ec2-sg-${EnvironmentType}'
+      GroupDescription: Security group for QA monitoring EC2 instance
+      VpcId: !Ref VpcId
+      SecurityGroupEgress:
+        - IpProtocol: -1
+          CidrIp: 0.0.0.0/0
+          Description: Allow all outbound traffic
+      Tags:
+        - Key: Name
+          Value: !Sub 'qa-monitoring-ec2-sg-${EnvironmentType}'
+        - Key: Project
+          Value: parallellm
+        - Key: Environment
+          Value: !Ref EnvironmentType
+
+  # EC2 Instance
+  EC2Instance:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiId
+      InstanceType: !Ref InstanceType
+      IamInstanceProfile: !Ref EC2InstanceProfile
+      SubnetId: !Ref SubnetId
+      SecurityGroupIds:
+        - !Ref EC2SecurityGroup
+      KeyName: !If [HasKeyName, !Ref KeyName, !Ref 'AWS::NoValue']
+      BlockDeviceMappings:
+        - DeviceName: /dev/xvda
+          Ebs:
+            VolumeSize: !Ref DiskSize
+            VolumeType: gp3
+            DeleteOnTermination: true
+            Encrypted: true
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          # Update system
+          apt-get update -y || yum update -y
+      Tags:
+        - Key: Name
+          Value: !Sub 'qa-monitoring-${EnvironmentType}'
+        - Key: Project
+          Value: parallellm
+        - Key: Environment
+          Value: !Ref EnvironmentType
+
+Outputs:
+  InstanceId:
+    Description: ID of the EC2 instance
+    Value: !Ref EC2Instance
+
+  InstanceRoleArn:
+    Description: ARN of the IAM role attached to the EC2 instance
+    Value: !GetAtt EC2InstanceRole.Arn
+
+  SecurityGroupId:
+    Description: ID of the security group
+    Value: !Ref EC2SecurityGroup
+

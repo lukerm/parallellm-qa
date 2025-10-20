@@ -1,0 +1,96 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Cognito User Pool Monitoring Stack - Daily monitoring of user count with email notifications'
+
+Parameters:
+  EnvironmentType:
+    Description: The type of deployment environment
+    Type: String
+    Default: dev
+    AllowedValues:
+      - dev
+      - prod
+
+  TemplateBucketName:
+    Description: The name of the S3 bucket containing CloudFormation templates
+    Type: String
+
+  MonitoringBucketName:
+    Description: Name of the S3 bucket for storing QA monitoring outputs (created outside this stack)
+    Type: String
+
+  NotificationEmailAddress:
+    Description: Email address to receive notifications
+    Type: String
+
+  EC2InstanceType:
+    Description: EC2 instance type for QA monitoring
+    Type: String
+
+  EC2AmiId:
+    Description: AMI ID for the EC2 instance
+    Type: String
+
+  EC2DiskSize:
+    Description: Size of the EC2 root volume in GB
+    Type: Number
+
+  EC2KeyName:
+    Description: EC2 Key Pair name for SSH access (optional)
+    Type: String
+
+  VpcId:
+    Description: VPC ID where the EC2 instance will be deployed
+    Type: AWS::EC2::VPC::Id
+
+  SubnetId:
+    Description: Subnet ID where the EC2 instance will be deployed
+    Type: AWS::EC2::Subnet::Id
+
+
+Resources:
+
+  SNSTopicStack:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/stacks/qa-monitoring/sns-topic.yaml
+      TimeoutInMinutes: 10
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentType
+        - Key: Project
+          Value: parallellm
+      Parameters:
+        NotificationEmailAddress: !Ref NotificationEmailAddress
+        EnvironmentType: !Ref EnvironmentType
+
+  EC2InstanceStack:
+    Type: AWS::CloudFormation::Stack
+    DependsOn: SNSTopicStack
+    Properties:
+      TemplateURL: !Sub https://${TemplateBucketName}.s3.${AWS::Region}.amazonaws.com/stacks/qa-monitoring/ec2-instance.yaml
+      TimeoutInMinutes: 15
+      Tags:
+        - Key: Environment
+          Value: !Ref EnvironmentType
+        - Key: Project
+          Value: parallellm
+      Parameters:
+        EnvironmentType: !Ref EnvironmentType
+        InstanceType: !Ref EC2InstanceType
+        AmiId: !Ref EC2AmiId
+        DiskSize: !Ref EC2DiskSize
+        MonitoringBucketName: !Ref MonitoringBucketName
+        SNSTopicArn: !GetAtt SNSTopicStack.Outputs.SNSTopicArn
+        KeyName: !Ref EC2KeyName
+        VpcId: !Ref VpcId
+        SubnetId: !Ref SubnetId
+
+
+Outputs:
+  SNSTopicArn:
+    Description: ARN of the SNS topic for notifications
+    Value: !GetAtt SNSTopicStack.Outputs.SNSTopicArn
+
+  EC2InstanceId:
+    Description: ID of the EC2 instance
+    Value: !GetAtt EC2InstanceStack.Outputs.InstanceId

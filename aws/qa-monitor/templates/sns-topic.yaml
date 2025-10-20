@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'Template for creating an SNS topic for QA monitoring notifications'
+
+Parameters:
+  NotificationEmailAddress:
+    Type: String
+    Description: Email address to receive notifications
+    AllowedPattern: '[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
+    ConstraintDescription: Must be a valid email address
+
+  EnvironmentType:
+    Type: String
+    Description: The type of deployment environment
+
+Resources:
+  QAMonitoringTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Sub 'QAMonitoring-${EnvironmentType}'
+      DisplayName: !Sub 'QA Monitoring - ${EnvironmentType}'
+      Tags:
+        - Key: Project
+          Value: parallellm
+        - Key: Environment
+          Value: !Ref EnvironmentType
+
+  EmailSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      TopicArn: !Ref QAMonitoringTopic
+      Endpoint: !Ref NotificationEmailAddress
+
+Outputs:
+  SNSTopicArn:
+    Description: ARN of the SNS topic for notifications
+    Value: !Ref QAMonitoringTopic
+
+  SNSTopicName:
+    Description: Name of the SNS topic
+    Value: !GetAtt QAMonitoringTopic.TopicName
