@@ -3,6 +3,7 @@ import logging
 import os
 import re
 import time
+import uuid
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -174,6 +175,8 @@ def message_to_dict(msg: BaseMessage) -> dict:
 def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Path:
     """Save the full execution trace to JSON."""
     trace = {
+        "run_id": str(uuid.uuid4()),
+        "run_type": artefacts_dir.name,
         "timestamp": datetime.utcnow().isoformat(),
         "steps": []
     }

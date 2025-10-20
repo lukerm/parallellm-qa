@@ -4,6 +4,7 @@ import re
 import time
 import json
 import random
+import uuid
 from datetime import datetime
 from typing import Optional, Tuple, Any, Dict, List
 from pathlib import Path
@@ -120,7 +121,12 @@ def message_to_dict(msg: BaseMessage) -> dict:
 
 def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Dict[str, Any]:
     """Save execution trace to JSON and return final state info."""
-    trace = {"timestamp": datetime.utcnow().isoformat(), "steps": []}
+    trace = {
+        "run_id": str(uuid.uuid4()),
+        "run_type": artefacts_dir.name,
+        "timestamp": datetime.utcnow().isoformat(),
+        "steps": []
+    }
     final_state = None
 
     for step in stream:
