@@ -46,6 +46,10 @@ Parameters:
     Description: Subnet ID where the EC2 instance will be deployed
     Type: AWS::EC2::Subnet::Id
 
+  AllowedIPAddress:
+    Description: IP address allowed for SSH access (in CIDR notation, e.g., 1.2.3.4/32)
+    Type: String
+
 
 Resources:
 
@@ -84,6 +88,7 @@ Resources:
         KeyName: !Ref EC2KeyName
         VpcId: !Ref VpcId
         SubnetId: !Ref SubnetId
+        AllowedIPAddress: !Ref AllowedIPAddress
 
 
 Outputs:

@@ -38,6 +38,10 @@ Parameters:
     Type: AWS::EC2::Subnet::Id
     Description: Subnet ID where the EC2 instance will be deployed
 
+  AllowedIPAddress:
+    Type: String
+    Description: IP address allowed for SSH access (in CIDR notation, e.g., 1.2.3.4/32)
+
 Conditions:
   HasKeyName: !Not [!Equals [!Ref KeyName, '']]
 
@@ -110,6 +114,12 @@ Resources:
       GroupName: !Sub 'qa-monitoring-ec2-sg-${EnvironmentType}'
       GroupDescription: Security group for QA monitoring EC2 instance
       VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref AllowedIPAddress
+          Description: SSH access from allowed IP
       SecurityGroupEgress:
         - IpProtocol: -1
           CidrIp: 0.0.0.0/0
