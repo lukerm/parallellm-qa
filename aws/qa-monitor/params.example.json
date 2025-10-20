@@ -1,0 +1,46 @@
+[
+  {
+    "ParameterKey": "EnvironmentType",
+    "ParameterValue": "prod"
+  },
+  {
+    "ParameterKey": "TemplateBucketName",
+    "ParameterValue": "TEMPLATE_BUCKET_NAME"
+  },
+  {
+    "ParameterKey": "MonitoringBucketName",
+    "ParameterValue": "MONITORING_BUCKET_NAME"
+  },
+  {
+    "ParameterKey": "NotificationEmailAddress",
+    "ParameterValue": "NOTIFICATION_EMAIL_ADDRESS"
+  },
+  {
+    "ParameterKey": "EC2InstanceType",
+    "ParameterValue": "t3.nano"
+  },
+  {
+    "ParameterKey": "EC2AmiId",
+    "ParameterValue": "ami-01f23391a59163da9"
+  },
+  {
+    "ParameterKey": "EC2DiskSize",
+    "ParameterValue": "12"
+  },
+  {
+    "ParameterKey": "EC2KeyName",
+    "ParameterValue": "EC2_KEY_PAIR_NAME"
+  },
+  {
+    "ParameterKey": "VpcId",
+    "ParameterValue": "VPC_ID"
+  },
+  {
+    "ParameterKey": "SubnetId",
+    "ParameterValue": "SUBNET_ID"
+  },
+  {
+    "ParameterKey": "AllowedIPAddress",
+    "ParameterValue": "YOUR_IP_ADDRESS/32"
+  }
+]
