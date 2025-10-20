@@ -41,7 +41,7 @@ def save_screenshot(driver: webdriver.Chrome, out_dir: Path, name: str) -> Path:
 
 def copy_trace_to_error_folder(artefacts_dir: Path) -> Optional[Path]:
     """
-    Copy execution trace to the error folder with a unique filename based on run_id.
+    Copy execution trace and any PNG files to the error folder in a subdirectory named by run_id.
 
     Args:
         artefacts_dir: Path to the artefacts directory containing the execution trace
@@ -49,22 +49,31 @@ def copy_trace_to_error_folder(artefacts_dir: Path) -> Optional[Path]:
     Returns:
         Path to the copied error trace file, or None if the trace file doesn't exist
     """
-    error_dir = Path("artefacts/error")
-    error_dir.mkdir(parents=True, exist_ok=True)
-
     trace_file = artefacts_dir / "execution_trace.json"
     if not trace_file.exists():
         logger.warning(f"Execution trace not found at {trace_file}")
         return None
 
-    # Use the run_id from the trace file for unique filename
+    # Use the full run_id from the trace file for the folder name
     with trace_file.open("r", encoding="utf-8") as f:
         trace_data = json.load(f)
-        run_id = trace_data.get("run_id", str(uuid.uuid4()))[:8]
+        run_id = trace_data.get("run_id", str(uuid.uuid4()))
 
-    error_trace_file = error_dir / f"{run_id}_execution_trace.json"
+    # Create error subdirectory with the full run_id
+    error_run_dir = Path("artefacts/error") / run_id
+    error_run_dir.mkdir(parents=True, exist_ok=True)
+
+    # Copy trace file with original filename
+    error_trace_file = error_run_dir / "execution_trace.json"
     shutil.copy2(trace_file, error_trace_file)
     logger.info(f"Copied execution trace to error folder: {error_trace_file}")
+
+    # Copy all PNG files from the artefacts directory
+    png_files = list(artefacts_dir.glob("*.png"))
+    for png_file in png_files:
+        dest_file = error_run_dir / png_file.name
+        shutil.copy2(png_file, dest_file)
+        logger.info(f"Copied screenshot to error folder: {dest_file}")
 
     return error_trace_file
 
