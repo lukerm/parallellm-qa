@@ -159,6 +159,7 @@ def run_and_save_execution_trace(stream, artefacts_dir: Path) -> Dict[str, Any]:
         json.dump(trace, f, indent=2, ensure_ascii=False)
     logger.info(f"Execution trace saved to: {trace_file}")
 
+    # Try to return the final state's health and health description, otherwise return UNKNOWN
     if final_state:
         for node_state in final_state.values():
             return {
