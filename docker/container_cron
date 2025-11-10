@@ -1,0 +1,2 @@
+0,30 * * * * root PYTHONPATH=/app LOG_LEVEL=INFO /home/seluser/venv/bin/python3 -m src.run_chats --headless
+15,45 * * * * root PYTHONPATH=/app LOG_LEVEL=INFO /home/seluser/venv/bin/python3 -m src.monitor
