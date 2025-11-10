@@ -19,6 +19,13 @@ COPY pyproject.toml .
 RUN /home/seluser/venv/bin/python -m pip install .
 
 COPY src/ src/
-COPY docker/container_cron /etc/cron.d/container_cron
 
-CMD ["cron", "-f"]
+COPY docker/container_cron /etc/cron.d/container_cron
+RUN chmod 0644 /etc/cron.d/container_cron && \
+    echo "" >> /etc/cron.d/container_cron && \
+    touch /etc/crontab
+
+COPY docker/entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]
