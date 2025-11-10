@@ -1,8 +1,12 @@
-FROM python:3.14-slim
+FROM selenium/standalone-chrome:latest
 
 WORKDIR /app
 
-COPY --from=ghcr.io/astral-sh/uv:0.9.8 /uv /uvx /bin/
+USER root
+
+# Ensure seluser owns their venv completely
+RUN chown -R seluser:seluser /home/seluser/venv && \
+    chmod -R u+w /home/seluser/venv
 
 COPY pyproject.toml .
 RUN uv sync
