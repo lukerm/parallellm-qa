@@ -1,0 +1,65 @@
+# Git files
+.git
+.gitignore
+
+# config files
+config/secret/
+aws/**/params.*.json
+
+# Environment files
+.env
+*.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+artifacts/
+artefacts/
+artefacts/**
+build/
+dist/
+*.egg-info/
+
+# Test files
+tests/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data files
+data/
+
+# Docker files
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Documentation
+README.md
+LICENSE
