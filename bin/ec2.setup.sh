@@ -1,13 +1,11 @@
 #!/bin/bash
-# Run from root of project
-
-## Docker
-./bin/setup_docker.sh
 
 # get the code
 git clone git@github.com:parallellm/parallellm-qa.git
 cd parallellm-qa
 
+## Docker
+./bin/setup_docker.sh
 
 # TODO: set up env vars in .env file
 less .env
