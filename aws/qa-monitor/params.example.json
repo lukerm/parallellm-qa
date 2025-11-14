@@ -17,7 +17,7 @@
   },
   {
     "ParameterKey": "EC2InstanceType",
-    "ParameterValue": "t3.nano"
+    "ParameterValue": "t3.micro"
   },
   {
     "ParameterKey": "EC2AmiId",

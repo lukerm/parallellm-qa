@@ -1,3 +1,4 @@
+import argparse
 import logging
 import os
 import re
@@ -370,8 +371,13 @@ def run_chats(driver: webdriver.Chrome, profile: Optional[str] = None, run_ts: s
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run QA test for the chat interface")
+    parser.add_argument("--headless", action="store_true", help="Run in headless mode")
+    args = parser.parse_args()
+    logger.info(f"Running in headless mode: {args.headless}")
+
     run_ts = datetime.utcnow().strftime("%Y%m%d-%H%M%S")
-    with get_driver() as driver:
+    with get_driver(headless=args.headless) as driver:
         logger.info("Invoking run_login()...")
         ok, out = run_login(driver, run_ts=run_ts)
         if not ok:
